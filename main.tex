@@ -1,0 +1,56 @@
+\documentclass{article}
+\usepackage[utf8]{inputenc}
+\usepackage[margin=1in]{geometry}
+\usepackage[colorlinks=true,urlcolor=blue,anchorcolor=blue,citecolor=blue,filecolor=blue,linkcolor=blue,menucolor=blue]{hyperref}
+\usepackage[colorinlistoftodos,textsize=scriptsize]{todonotes}
+
+\title{Analysis Ecosystem at the HL-LHC}
+\author{Gordon Watts\footnote{University of Washington, Seattle}}
+
+% NOTE: Can be a max of 2 pages, plus references (if we want them)
+% We need a contact person for this.
+
+\begin{document}
+
+\maketitle
+\abstract{The HL-LHC will see a $x10$ more data than Run 2 and Run 3. Disk space, one of the most expensive aspects of computing hardware, will be at a premium. The experiments are responding by building single corrected and un-skimmed datasets. A single processing of these datasets will be many 100's of TB or PB's as the HL-LHC progresses. The field does not have the disk space or i/o bandwidth for each analysis to skim large parts of these datasets locally, at scale. Nor should graduate students have to babysit the jobs required to do this. Many new tools are being developed to address this, from ones based in the traditional ROOT environment, like RDataFrame and RNTuple, to those built in the python ecosystem like awkward-array and coffea and ServiceX and func\_adl. This LOI discusses the eco-system for analysis in the HL-LHC - how all the tools will be put together in a usable, responsive, and reproducible way.
+}
+
+\section*{Introduction}
+
+The ATLAS and CMS HL-LHC\cite{hl-lhc} are settling on computing models that rely on two datasets. The first is a highly compressed dataset, with minimal information - enough to satisfy at least 50\% of analyses use cases (the nanoAOD at CMS\cite{hllhc-computing-model} and PHYSLITE at ATLAS\cite{hllhc-computing-model}) and the second is x10 larger (the miniAOD at CMS and PHYSDAOD at ATLAS) that can satisfy the rest of the analyses. The larger of the datasets range in the low numbers of PB/year, and the smaller range from 100's of TBs up to a PB/year. Many other experiments are facing similar challenges.
+
+This increase in dataset sizes will force the nature of analysis at the experiments to change. The most common path currently starts GRID jobs run on output of an experiment's production system. These files are downloaded to a group or analysis common disk area. Those outputs are skimmed again to a smaller set of files - the analysis ntuples. These files are usually small enough a complete run can be made on a single desktop PC or even a laptop in some cases in a few hours or a day. Control of this process is mostly ad-hoc, using bash, python, ROOT\cite{root} macros, some Jupyter notebooks\cite{jupyter}, and hand-art. The HL-LHC will apply a x10 to each of these stages, perhaps more for many of the precision analyses that have to be done to realize the full physics potential of the HL-LHC.
+
+The automation likely required to run on datasets of the HL-LHC size will require analyses to evolve from their common current state of a collection of scripts and C++ source and ROOT macros and python scripts and Jupyter Notebooks to something that is much more organized. Further, it isn't clear the best use of a new graduate student's time is learning how to run on 100's of TB's of files rather than making a plot. The field must move to a simpler way to express its physics intent. This simpler way must have high fidelity, be flexible, sustainable, use resources efficiently, and archival and reproducible.
+
+The community has already started exploring aspects of this. Projects like ServiceX\cite{servicex} are exploring data discovery and rapid delivery. The `awakward` array package\cite{awkward} enables columnar analysis in python. `RDataFrame`\cite{rdataframe} is a declarative analysis work-flow based in C++ and enabled in python, part of the ROOT ecosystem. `coffea`\cite{coffea} is a python-based columnar analysis framework which has interfaces to Spark\cite{spark} and DASK\cite{dask} and other systems for rapid parallel processing and production of histograms. Juypter Notebooks enable code, text, and graphics to co-exist in a single document, transforming how we interact with our analysis code. New, more powerful, techniques for histogramming are being developed in the ROOT7 and `boost.histogram`\cite{boost} projects. Recent years have shown a sudden flood of declarative analysis languages - allowing the analyzer to specify what they want done rather than how they want it done. There is also an effort (represented by another LOI\cite{diff-prog-loi}) to make an analysis differentiable\cite{differentiable-programming} - and that will have impacts up and down the analysis tool-set.
+
+Work has also begun understanding how to host these tools. A separate LOI on Analysis Facilities\cite{analysis-facilities-loi} has been submitted to Snowmass. An analysis facility is a modern compute cluster that will furnish a range of services, including data delivery (ServiceX, XRootD\cite{xrootd}, etc.), batch jobs, Jupyter Notebook servers, hosted terminals with experiment's programming environments, etc. That LOI discusses problems such as how to best share resources between interactive and notebook users and batch facilities that are part of the facility, or located in an adjacent Tier 2, how to best deliver data quickly to analyzers, how to configure hardware to enable the proper amount of caching, etc.
+
+\section*{Challenges to a Coherent Analysis Vision for the HL-LHC}
+
+Work will progress on these individual tools over the course of the next year. This LOI is meant to collect (a small subset of) the ecosystem-level issues and challenges that should be addressed to make a physics analyzer's job as easy as possible. What follows are some of the eco-system level issues to be thought through.
+
+What services should we expect an analysis facility to provide? How tied should its design be to the field? To an experiment? To an analysis? How easily can a physicist move their analysis from one facility to the next?
+
+How can we support both columnar and procedural approaches in the same analysis? Some algorithms are more straight forward when written in a procedural method (track finding, jet building, etc.). Others are most concisely expressed in a columnar format. Many existing, well understood and debug utilities exist in C++. How do we build all of this into an ecosystem that supports the new methods of analysis - avoiding rewriting all of the code we currently have?
+
+Systematic errors and physics-object corrections present some of the most thorny problems, partly due to combinitorics and partly due to the many different ways they are applied and derived. Different experiments have taken very different approaches to applying systematics, some requiring going all the way back to the larger data sample. Solving this in a way that does not stress our data access facilities and achieves the precision required for HL-LHC analysis will likely require getting a broad range of people working together, from physics management to object identification groups to physics groups.
+
+Machine Learning (ML) will figure more prominently in our analysis workflows. The standard ML workflow starts by extracting data into local files. Then designing a ML network, and using the local files to train. Then taking the results of the training and moving it back into the data extraction workflow. What is needed from an Analysis Facility to support this? From the software eco-system to make these transitions as seamless (and trackable and reproducible) as possible?
+
+The effort to better integrate the ROOT and python ecosystems has a long history in our field\cite{bridges-and-ferries}. As new tools appear on both sides (ROOT's RDataFrame and RNTuple, python distributed analysis tools like DASK and Spark, analysis pipelines like coffea, histogram packages like boost.histogram), what is needed to continue to integrate the two so the best tool can be used for this task?
+
+Reproducible Analysis have already to paid dividends in Run 2\cite{repro-analysis-llp}. What work needs to be done to make this work in this new era? What will it take to preserve RDataFrame analyses, or columnar analyses? What about micro-service architectures for delivering data?
+
+There is also the last mile. For example, making it easy to push likelihoods, plots, tables generated in an analysis into HEPDATA\cite{hepdata}. Making sure a new graduate student can quickly make plots on an analysis group's "derived" data. Can you pick up work from multiple places in the world without some complex setup or large data download required? 
+
+\section*{Goals}
+
+ As work progresses on building a coherent analysis ecosystem the field will discover gaps as well as new ways to address old problems - that span more than just one tool or how it interacts with the Analysis Facility or the physicist. In some cases, only as prototypes are built will the field understand the issues and how they fit into the overall puzzle. Lastly the field has to keep in mind that the tool-set we start the HL-LHC with may not be the one we finish with. However, if we design the components well enough, we can allow for a smooth evolution as new and better tools are written. The work underway in ATLAS, CMS, CERN, US ATLAS and US CMS, LHCb, IRIS-HEP, and other entities is building this new ecosystem. The field has enough pieces in place to start looking at the big picture.
+ 
+\bibliographystyle{utphys}
+\bibliography{references}
+
+\end{document}
